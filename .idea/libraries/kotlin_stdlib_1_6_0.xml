@@ -1,0 +1,17 @@
+<component name="libraryTable">
+  <library name="kotlin-stdlib-1.6.0">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-1.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-jdk7-1.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-jdk8-1.6.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-1.6.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-1.6.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-common-1.6.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-jdk7-1.6.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-jdk8-1.6.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
