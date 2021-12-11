@@ -2,10 +2,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 object Time {
     private val time = AtomicReference(0.0) //seconds
     val now get() = time.get()!!
+    val nowH get() = now.seconds
 
 //    fun reset() {
 //        queue.forEach { it.second.resumeWithException(CancellationException()) }
@@ -35,6 +39,8 @@ object Time {
             time.set(end)
         }
     }
+
+    fun run(time: Duration) = run(time.toDouble(DurationUnit.SECONDS))
 
     var parallelStrategy = ParallelStrategy.NoParallel
 
