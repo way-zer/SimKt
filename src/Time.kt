@@ -24,6 +24,10 @@ object Time {
         }
     }
 
+    fun deSchedule(process: Process) = synchronized(queue) {
+        queue.remove(process)
+    }
+
     fun run(seconds: Double) {
         runBlocking(Dispatchers.Default) {
             val end = (now + seconds).coerceAtMost(Double.MAX_VALUE)
@@ -51,7 +55,11 @@ object Time {
             override fun onTick() = Unit
         }
 
-        /**时间差小于[eps]的事件并行进行*/
+        /**
+         * Allow parallel if the interval less than [eps]
+         * @param eps max interval to parallel
+         * */
+        @Suppress("MemberVisibilityCanBePrivate", "unused")
         class WithTimeWrong(val eps: Double) : ParallelStrategy {
             override fun onTick() {
                 while ((queue.peek()?.nextTime ?: Double.MAX_VALUE) < now + eps) {

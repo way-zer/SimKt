@@ -4,6 +4,7 @@
       <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-1.6.0.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-jdk7-1.6.0.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-jdk8-1.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-script-runtime.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
