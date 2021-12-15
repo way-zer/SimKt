@@ -1,3 +1,4 @@
+import cf.wayzer.simkt.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 

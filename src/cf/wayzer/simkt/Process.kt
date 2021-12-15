@@ -1,3 +1,5 @@
+package cf.wayzer.simkt
+
 import kotlinx.coroutines.*
 import kotlinx.coroutines.selects.SelectBuilder
 import kotlinx.coroutines.selects.SelectClause0

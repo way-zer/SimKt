@@ -1,3 +1,4 @@
+import cf.wayzer.simkt.*
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlin.time.Duration.Companion.minutes

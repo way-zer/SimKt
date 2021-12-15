@@ -1,3 +1,5 @@
+package cf.wayzer.simkt
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.util.*
@@ -38,7 +40,7 @@ object Time {
                     time.set(next.nextTime)
                     next.resume()
                 }
-                parallelStrategy.onTick()
+                ParallelStrategy.NoParallel.onTick()
             }
             time.set(end)
         }

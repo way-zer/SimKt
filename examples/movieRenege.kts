@@ -1,4 +1,5 @@
-import Process.Companion.onJoinWithCancel
+import cf.wayzer.simkt.*
+import cf.wayzer.simkt.Process.Companion.onJoinWithCancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
