@@ -1,6 +1,6 @@
 package cf.wayzer.simkt
 
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
@@ -8,16 +8,17 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 object Time {
     private val time = AtomicReference(0.0) //seconds
     val now get() = time.get()!!
     val nowH get() = now.seconds
 
-//    fun reset() {
-//        queue.forEach { it.second.resumeWithException(CancellationException()) }
-//        queue.clear()
-//        time.reset()
-//    }
+    fun reset() {
+        queue.forEach { it.cancel() }
+        queue.clear()
+        time.set(0.0)
+    }
 
     private val queue = PriorityQueue<Process>()
     fun schedule(process: Process) {
@@ -31,10 +32,10 @@ object Time {
     }
 
     fun run(seconds: Double) {
-        runBlocking(Dispatchers.Default) {
+        runBlocking(Process.tracedDispatcher.raw) {
             val end = (now + seconds).coerceAtMost(Double.MAX_VALUE)
             while (true) {
-                Process.waitRunning()
+                Process.tracedDispatcher.waitRunning()
                 if ((queue.peek()?.nextTime ?: Double.POSITIVE_INFINITY) > end) break
                 synchronized(queue) { queue.poll() }?.let { next ->
                     time.set(next.nextTime)

@@ -1,5 +1,6 @@
 package cf.wayzer.simkt
 
+import cf.wayzer.simkt.util.DispatcherWithTrace
 import kotlinx.coroutines.*
 import kotlinx.coroutines.selects.SelectBuilder
 import kotlinx.coroutines.selects.SelectClause0
@@ -7,9 +8,7 @@ import kotlinx.coroutines.selects.SelectInstance
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.system.exitProcess
@@ -18,48 +17,33 @@ import kotlin.time.DurationUnit
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 open class Process(val name: String, body: suspend Process.() -> Unit) : Comparable<Process>, CoroutineScope {
-    override val coroutineContext = CoroutineName(name) + Job() + object : CoroutineDispatcher() {
-        override fun dispatch(context: CoroutineContext, block: Runnable) {
-//                println("$name: increment")
-            runningCnt.incrementAndGet()
-            running = true
-            if (runningCnt.get() > maxProcess) {
-                println("Too many process, exceed than $maxProcess")
-                exitProcess(-1)
-            }
-            Dispatchers.Default.dispatch(context) {
-                block.run()
-                running = false
-                runningCnt.decrementAndGet()
-//                    println("$name: decrement")
-            }
+    final override val coroutineContext = (CoroutineName(name) + tracedDispatcher).let {
+        it + CoroutineScope(it).launch {
+            wait()
+            body.invoke(this@Process)
+        }.apply {
+            invokeOnCompletion { Time.deSchedule(this@Process) }
         }
     }
 
+    val job by coroutineContext::job
+    val active by job::isActive
+    val finished by job::isCompleted
     var nextTime: Double = 0.0
         private set
-    var running = true
-        private set
+
     private lateinit var co: Continuation<Unit>
-    val job: Job
-
-    init {
-        job = launch {
-            wait()
-            body()
-        }
-        job.invokeOnCompletion {
-            Time.deSchedule(this)
-            (coroutineContext[Job] as CompletableJob).complete()
-        }
-    }
-
     suspend fun wait(duration: Duration = Duration.ZERO) {
         suspendCoroutine<Unit> { co ->
             this.co = co
             nextTime = Time.now + duration.toDouble(DurationUnit.SECONDS)
             Time.schedule(this)
         }
+    }
+
+    internal fun resume() {
+        if (job.isCancelled) return
+        co.resume(Unit)
     }
 
     data class JobWithPriority(val job: Job, val priority: Int, val lastCo: Continuation<Unit>) : Comparable<JobWithPriority> {
@@ -71,8 +55,7 @@ open class Process(val name: String, body: suspend Process.() -> Unit) : Compara
     private val stack = sortedSetOf<JobWithPriority>()// priority to job
     private val stackLock = Mutex()
 
-    /**@return true means Not in waiting, can't intercept */
-    suspend fun intercept(priority: Int, body: suspend Process.() -> Unit) {
+    suspend fun intercept(priority: Int, block: suspend Process.() -> Unit) {
         while (true) {
             stackLock.lock()
             val job = this.stack.lastOrNull()?.takeIf { it.priority >= priority } ?: break
@@ -83,7 +66,7 @@ open class Process(val name: String, body: suspend Process.() -> Unit) : Compara
         val job = launch {
             if (Time.deSchedule(this@Process).not()) yield()
             val leftTime = nextTime - Time.now
-            this@Process.body()
+            block.invoke(this@Process)
             stackLock.withLock {
                 stack.remove(item)
             }
@@ -117,23 +100,16 @@ open class Process(val name: String, body: suspend Process.() -> Unit) : Compara
         }
     }
 
-    internal fun resume() {
-        if (job.isCancelled) return
-        co.resume(Unit)
-    }
-
     final override fun compareTo(other: Process): Int {
         return compareValues(nextTime, other.nextTime)
     }
 
     companion object {
         val maxProcess = System.getProperty("maxProcess")?.toInt() ?: 100000
-        val processCoroutineContext = Dispatchers.Default
-        internal val runningCnt = AtomicInteger(0)
-        internal suspend fun waitRunning() {
-            while (runningCnt.get() > 0) {
-                yield()
-            }
+        var tracedDispatcher = DispatcherWithTrace(Dispatchers.Default, maxProcess) { _, _ ->
+            println("Too many coroutine, exceed than $maxProcess")
+            println("You can modify it with property \"maxProcess\"")
+            exitProcess(-1)
         }
 
         @OptIn(InternalCoroutinesApi::class)
