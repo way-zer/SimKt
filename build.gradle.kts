@@ -28,6 +28,8 @@ dependencies {
     implementation("org.apache.commons:commons-rng-sampling:1.4")
     val examplesImplementation by configurations
     examplesImplementation(kotlin("script-runtime"))
+    examplesImplementation("org.jetbrains.lets-plot:lets-plot-kotlin-jvm:3.1.1")
+//    examplesImplementation("org.jetbrains.lets-plot:lets-plot-batik:2.2.1")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {

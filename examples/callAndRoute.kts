@@ -1,6 +1,16 @@
 import cf.wayzer.simkt.*
+import jetbrains.letsPlot.geom.geomDensity
+import jetbrains.letsPlot.label.ggtitle
+import jetbrains.letsPlot.label.xlab
+import jetbrains.letsPlot.label.ylab
+import jetbrains.letsPlot.letsPlot
+import jetbrains.letsPlot.scale.scaleXContinuous
+import jetbrains.letsPlot.scale.scaleYContinuous
 import kotlinx.coroutines.channels.Channel
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.DurationUnit
+
 /*
 呼叫经过路由器被接线员处理
 有两个呼叫者X、Y,呼叫间隔事件分别为callTimeX、callTimeY（服从指数分布）
@@ -17,55 +27,80 @@ val processTimeX = R.normalGaussianByBoxMuller().with(5.0, 1.0)
 val processTimeY = R.normalGaussianByBoxMuller().with(7.0, 2.0)
     .map { it.coerceAtLeast(0.1).minutes }
 
+
 val queueIn = Channel<String>(Channel.UNLIMITED)
-Process("X_join") {
+Process("X") {
+    var i = 0
     while (true) {
-        println("[${Time.nowH}] X 呼叫")
-        queueIn.send("X_join")
+        i++
+        log("呼叫 $i")
+        queueIn.send("X#$i")
         wait(callTimeX())
     }
 }
-Process("Y_join") {
+Process("Y") {
+    var i = 0
     while (true) {
-        println("[${Time.nowH}] Y 呼叫")
-        queueIn.send("Y_join")
+        i++
+        log("呼叫 $i")
+        queueIn.send("Y#$i")
         wait(callTimeY())
     }
 }
+
+val handleTime = mutableListOf<Duration>()
 val queueX = Channel<String>(0)
 val queueY = Channel<String>(0)
 Process("Router") {
     while (true) {
         val msg = queueIn.receive()
-        println("[${Time.nowH}] 路由开始处理$msg")
+        val start = Time.nowH
+        log("开始处理 $msg")
         wait(processTimeRouter())
-        when (msg) {
-            "X_join" -> {
+        when {
+            msg.startsWith("X") -> {
                 queueX.send(msg)
-                println("[${Time.nowH}] X发给接线员1")
+                log("发给接线员1 $msg")
             }
-            "Y_join" -> {
+            msg.startsWith("Y") -> {
                 queueY.send(msg)
-                println("[${Time.nowH}] Y发给接线员2")
+                log("发给接线员2 $msg")
             }
         }
+        val end = Time.nowH
+        handleTime.add(end - start)
     }
 }
-Process("X_get") {
+Process("接线员1") {
     while (true) {
-        queueX.receive()
-        println("[${Time.nowH}] 接线员1处理X")
+        val msg = queueX.receive()
+        log("处理 $msg")
         wait(processTimeX())
-        println("[${Time.nowH}] X处理完成")
+        log("处理完成 $msg")
     }
 }
-Process("Y_get") {
+Process("接线员2") {
     while (true) {
-        queueY.receive()
-        println("[${Time.nowH}] 接线员2处理Y")
+        val msg = queueY.receive()
+        log("处理 $msg")
         wait(processTimeY())
-        println("[${Time.nowH}] Y处理完成")
+        log("处理完成 $msg")
     }
 }
-Time.run(60.minutes)
+
+Log.init("callAndRoute.csv")
+Time.run(180.minutes)
 println("[${Time.nowH}] Simulate end")
+Log.close()
+Time.reset()
+
+LetPlotHelper.wrap("callAndRoute.html") {
+    this += letsPlot() +
+            ggtitle("处理时间分布(均值%.2f分钟)".format(handleTime.map { it.toDouble(DurationUnit.MINUTES) }.average())) +
+            xlab("处理时间 (Minutes)") +
+            ylab("probability density") +
+            geomDensity {
+                x = handleTime.map { it.toDouble(DurationUnit.MINUTES) }
+            } +
+            scaleXContinuous() + scaleYContinuous()
+}
