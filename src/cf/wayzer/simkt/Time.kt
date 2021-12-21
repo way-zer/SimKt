@@ -41,7 +41,7 @@ object Time {
                     time.set(next.nextTime)
                     next.resume()
                 }
-                ParallelStrategy.NoParallel.onTick()
+                parallelStrategy.onTick()
             }
             time.set(end)
         }
